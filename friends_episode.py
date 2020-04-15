@@ -10,19 +10,33 @@ class Friends:
     netflix_url = 'https://www.netflix.com/watch/'
     id = 70273996
 
-    def __init__(self,number,episode,date,title):
+    base_score = 100
+    not_played_score = 1
+    play_score = 100
+
+    def __init__(self,number,episode,date,title,score):
         self.title = title
         self.episode = episode # episode number in that season i.e ep.12
         self.number = number # overall episode number i.e ep.134
         self.date = date
         self. netflix_id = (self.id + int(self.number))
         self. link = f'{self.netflix_url}{self.netflix_id}'
+        self.score = score
 
     def __str__(self):
         return(f'{self.title}\n'
                f'Episode: {self.number}\n')
 
-def episode_finder(url):
+    def add_score(self):
+        self.score += self.not_played_score
+
+    def minus_score(self):
+        self.score = 0
+
+    def reset_score(self):
+        self.score = self.base_score
+
+def episode_finder(url): ## only used to initially import epsiode data.
     episode_list =[]
     res = requests.get(url,headers=headers)
 
@@ -60,9 +74,37 @@ def episode_finder(url):
     return episode_list
 
 
+def saveJSON(list):
+    data = []
+    for i in list:
+        d = i.__dict__
+        data.append(d)
+
+    with open('Friends.json','w') as f:
+        json.dump(data,f,indent=2)
+    print('Saved!')
+
+
+def importJSON():
+    episode_list = []
+    with open('Friends.json','r') as f:
+        try:
+            data = json.load(f)
+        except json.decoder.JSONDecodeError:
+            print('Empty file')
+            return
+    for i in data:
+        f = Friends(title=i['title'],
+                    episode=i['episode'],
+                    number=i['number'],
+                    date=i['date'],
+                    score=i['score'],
+                    )
+        episode_list.append(f)
+    return episode_list
 
 if __name__ == '__main__':
-    list = episode_finder(url)
+    list = importJSON()
 
     while True:
         choice = random.choice(list)
@@ -75,6 +117,15 @@ if __name__ == '__main__':
             continue
         elif i.upper() == 'Y':
             webbrowser.open(choice.link, new=2)
+            choice.minus_score()
+            print(choice.score)
+            for x in list:
+                if x.number == choice.number:
+                    print(x.number, x.score)
+                else:
+                    x.add_score()
+                    print(x.number, x.score)
+            saveJSON(list)
             break
 
 
